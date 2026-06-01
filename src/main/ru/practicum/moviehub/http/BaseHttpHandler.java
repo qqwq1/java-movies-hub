@@ -11,10 +11,10 @@ abstract class BaseHttpHandler implements HttpHandler {
 
     protected void sendJson(HttpExchange ex, int status, String json) throws IOException {
         ex.getResponseHeaders().set("Content-Type", CT_JSON);
-        ex.sendResponseHeaders(status, 0);
-        ex.getResponseBody().write(json.getBytes(StandardCharsets.UTF_8));
+        byte[] resp = json.getBytes(StandardCharsets.UTF_8);
+        ex.sendResponseHeaders(status, resp.length);
+        ex.getResponseBody().write(resp);
         ex.getResponseBody().close();
-
     }
 
     protected void sendNoContent(HttpExchange ex) throws java.io.IOException {

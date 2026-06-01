@@ -116,7 +116,7 @@ public class MoviesApiTest {
 
         assertEquals(201, response.statusCode());
         assertTrue(server.getMoviesStore().getMovieList().contains(movie));
-        assertEquals(1, server.getMoviesStore().size);
+        assertEquals(1, server.getMoviesStore().getSize());
     }
 
     @DisplayName("POST /movies: возвращает ошибку при пустом title")
@@ -127,7 +127,7 @@ public class MoviesApiTest {
         HttpResponse<String> response = sendPost(body, "application/json; charset=UTF-8");
 
         assertEquals(422, response.statusCode());
-        assertEquals(0, server.getMoviesStore().size);
+        assertEquals(0, server.getMoviesStore().getSize());
         assertTrue(JsonParser.parseString(response.body()).getAsJsonObject().has("error"));
     }
 
@@ -140,7 +140,7 @@ public class MoviesApiTest {
         HttpResponse<String> response = sendPost(body, "application/json; charset=UTF-8");
 
         assertEquals(422, response.statusCode());
-        assertEquals(0, server.getMoviesStore().size);
+        assertEquals(0, server.getMoviesStore().getSize());
         assertTrue(JsonParser.parseString(response.body()).getAsJsonObject().has("error"));
     }
 
@@ -161,7 +161,7 @@ public class MoviesApiTest {
         );
         assertEquals(422, tooFuture.statusCode());
 
-        assertEquals(0, server.getMoviesStore().size);
+        assertEquals(0, server.getMoviesStore().getSize());
     }
 
     @DisplayName("POST /movies: возвращает ошибку при неправильном Content-Type")
@@ -172,7 +172,7 @@ public class MoviesApiTest {
         HttpResponse<String> response = sendPost(body, "text/plain");
 
         assertEquals(415, response.statusCode());
-        assertEquals(0, server.getMoviesStore().size);
+        assertEquals(0, server.getMoviesStore().getSize());
         assertTrue(JsonParser.parseString(response.body()).getAsJsonObject().has("error"));
     }
 
@@ -184,7 +184,7 @@ public class MoviesApiTest {
         HttpResponse<String> response = sendPost(malformed, "application/json; charset=UTF-8");
 
         assertEquals(422, response.statusCode());
-        assertEquals(0, server.getMoviesStore().size);
+        assertEquals(0, server.getMoviesStore().getSize());
         assertTrue(JsonParser.parseString(response.body()).getAsJsonObject().has("error"));
     }
 
@@ -274,7 +274,7 @@ public class MoviesApiTest {
         assertEquals(204, resp.statusCode());
         assertTrue(resp.body() == null || resp.body().isEmpty());
 
-        assertEquals(0, server.getMoviesStore().size);
+        assertEquals(0, server.getMoviesStore().getSize());
         assertFalse(server.getMoviesStore().getMovieList().contains(movie));
     }
 
@@ -292,7 +292,7 @@ public class MoviesApiTest {
         var obj = parsed.getAsJsonObject();
         assertTrue(obj.has("error") || obj.has("message"));
 
-        assertEquals(0, server.getMoviesStore().size);
+        assertEquals(0, server.getMoviesStore().getSize());
     }
 
     @DisplayName("DELETE /movies/{id} возвращает ошибку, если id не число")
@@ -308,7 +308,7 @@ public class MoviesApiTest {
         var obj = parsed.getAsJsonObject();
         assertTrue(obj.has("error") || obj.has("message"));
 
-        assertEquals(1, server.getMoviesStore().size);
+        assertEquals(1, server.getMoviesStore().getSize());
     }
 
     /// ///////////////////////////////////////////////////////////////////////////////////////////////////////

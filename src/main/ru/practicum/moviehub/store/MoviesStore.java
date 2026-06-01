@@ -7,16 +7,13 @@ import java.util.List;
 
 public class MoviesStore {
     private final List<Movie> movieList;
-    public int size;
 
     public MoviesStore() {
         this.movieList = new ArrayList<>();
-        size = 0;
     }
 
     public void add(Movie movie) {
         movieList.add(movie);
-        size++;
     }
 
     public List<Movie> getMovieList() {
@@ -25,12 +22,13 @@ public class MoviesStore {
 
     public void clear() {
         movieList.clear();
-        size = 0;
     }
 
     public void deleteMovie(Movie movie) {
-        if (movieList.remove(movie)) {
-            size--;
-        }
+        movieList.remove(movie);
+    }
+
+    public int getSize() {
+        return movieList.size();
     }
 }

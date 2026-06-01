@@ -16,96 +16,22 @@ import java.util.Map;
 
 public class MoviesHandler extends BaseHttpHandler {
     private final MoviesStore moviesStore;
+    private final Gson gson;
 
     public MoviesHandler(MoviesStore moviesStore) {
         this.moviesStore = moviesStore;
+        this.gson = new Gson();
     }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        Gson gson = new Gson();
         switch (resolveRequestType(exchange)) {
-            case GET -> {
-
-                String jsonMovieList = gson.toJson(moviesStore.getMovieList());
-                sendJson(exchange, 200, jsonMovieList);
-            }
-            case GET_ID -> {
-                int id;
-                try {
-                    id = Integer.parseInt(exchange.getRequestURI().getPath().split("/")[2]);
-                    Movie movie = moviesStore.getMovieList().stream()
-                            .filter(m -> m.getId() == id)
-                            .findFirst()
-                            .orElse(null);
-                    if (movie != null) {
-                        sendJson(exchange, 200, gson.toJson(movie));
-                    } else {
-                        ErrorResponse response = new ErrorResponse("Фильм не найден");
-                        sendJson(exchange, 404, gson.toJson(response));
-                    }
-
-                } catch (NumberFormatException e) {
-                    ErrorResponse response = new ErrorResponse("Некорректный ID");
-                    sendJson(exchange, 400, gson.toJson(response));
-                }
-            }
-            case GET_YEAR -> {
-                int year;
-                try {
-                    year = Integer.parseInt(exchange.getRequestURI().getQuery().split("=")[1]);
-                    List<Movie> movieList = moviesStore.getMovieList().stream()
-                            .filter(m -> m.getYear() == year)
-                            .toList();
-                    sendJson(exchange, 200, gson.toJson(movieList));
-                } catch (NumberFormatException e) {
-                    ErrorResponse response = new ErrorResponse("Некорректный параметр запроса — 'year'");
-                    sendJson(exchange, 400, gson.toJson(response));
-                }
-            }
-            case POST -> {
-                if (!exchange.getRequestHeaders().containsKey("Content-Type")
-                        || !exchange.getRequestHeaders().get("Content-Type")
-                        .contains("application/json; charset=UTF-8")) {
-                    ErrorResponse errorResponse = new ErrorResponse("Должен быть заголовок",
-                            new String[]{"Content-Type", "application/json; charset=UTF-8"});
-                    sendJson(exchange, 415, gson.toJson(errorResponse));
-                }
-                try {
-                    Movie movie = parseJsonBodyToMove(new String(exchange.getRequestBody().readAllBytes()));
-                    moviesStore.add(movie);
-                    sendJson(exchange, 201, gson.toJson(movie));
-                } catch (UnsupportedOperationException | IllegalArgumentException e) {
-                    ErrorResponse errorResponse = new ErrorResponse(e.getMessage(),
-                            new String[]{"название не должно быть пустым", "год должен быть между 1888 и 2026"});
-                    sendJson(exchange, 422, gson.toJson(errorResponse));
-                }
-
-            }
-            case DELETE_ID -> {
-                int id;
-                try {
-                    id = Integer.parseInt(exchange.getRequestURI().getPath().split("/")[2]);
-                    Movie movie = moviesStore.getMovieList().stream()
-                            .filter(m -> m.getId() == id)
-                            .findFirst()
-                            .orElse(null);
-                    if (movie != null) {
-                        moviesStore.deleteMovie(movie);
-                        sendNoContent(exchange);
-                    } else {
-                        ErrorResponse response = new ErrorResponse("Фильм не найден");
-                        sendJson(exchange, 404, gson.toJson(response));
-                    }
-
-                } catch (NumberFormatException e) {
-                    ErrorResponse response = new ErrorResponse("Некорректный ID");
-                    sendJson(exchange, 400, gson.toJson(response));
-                }
-            }
-            case NO_ENDPOINT -> {
-
-            }
+            case GET -> get(exchange);
+            case GET_ID -> getId(exchange);
+            case GET_YEAR -> getYear(exchange);
+            case POST -> post(exchange);
+            case DELETE_ID -> delete(exchange);
+            case NO_ENDPOINT -> sendJson(exchange, 405, "Method Not Allowed");
         }
     }
 
@@ -167,5 +93,86 @@ public class MoviesHandler extends BaseHttpHandler {
             }
 
         } else throw new UnsupportedOperationException("Тело запроса пустое");
+    }
+
+    private void get(HttpExchange exchange) throws IOException {
+        String jsonMovieList = gson.toJson(moviesStore.getMovieList());
+        sendJson(exchange, 200, jsonMovieList);
+    }
+
+    private void getId(HttpExchange exchange) throws IOException {
+        int id;
+        try {
+            id = Integer.parseInt(exchange.getRequestURI().getPath().split("/")[2]);
+            Movie movie = moviesStore.getMovieList().stream()
+                    .filter(m -> m.getId() == id)
+                    .findFirst()
+                    .orElse(null);
+            if (movie != null) {
+                sendJson(exchange, 200, gson.toJson(movie));
+            } else {
+                ErrorResponse response = new ErrorResponse("Фильм не найден");
+                sendJson(exchange, 404, gson.toJson(response));
+            }
+
+        } catch (NumberFormatException | IOException e) {
+            ErrorResponse response = new ErrorResponse("Некорректный ID");
+            sendJson(exchange, 400, gson.toJson(response));
+        }
+    }
+
+    private void getYear(HttpExchange exchange) throws IOException {
+        int year;
+        try {
+            year = Integer.parseInt(exchange.getRequestURI().getQuery().split("=")[1]);
+            List<Movie> movieList = moviesStore.getMovieList().stream()
+                    .filter(m -> m.getYear() == year)
+                    .toList();
+            sendJson(exchange, 200, gson.toJson(movieList));
+        } catch (NumberFormatException | IOException e) {
+            ErrorResponse response = new ErrorResponse("Некорректный параметр запроса — 'year'");
+            sendJson(exchange, 400, gson.toJson(response));
+        }
+    }
+
+    private void post(HttpExchange exchange) throws IOException {
+        if (!exchange.getRequestHeaders().containsKey("Content-Type")
+                || !exchange.getRequestHeaders().get("Content-Type")
+                .contains("application/json; charset=UTF-8")) {
+            ErrorResponse errorResponse = new ErrorResponse("Должен быть заголовок",
+                    new String[]{"Content-Type", "application/json; charset=UTF-8"});
+            sendJson(exchange, 415, gson.toJson(errorResponse));
+        }
+        try {
+            Movie movie = parseJsonBodyToMove(new String(exchange.getRequestBody().readAllBytes()));
+            moviesStore.add(movie);
+            sendJson(exchange, 201, gson.toJson(movie));
+        } catch (UnsupportedOperationException | IllegalArgumentException e) {
+            ErrorResponse errorResponse = new ErrorResponse(e.getMessage(),
+                    new String[]{"название не должно быть пустым", "год должен быть между 1888 и 2026"});
+            sendJson(exchange, 422, gson.toJson(errorResponse));
+        }
+    }
+
+    private void delete(HttpExchange exchange) throws IOException {
+        int id;
+        try {
+            id = Integer.parseInt(exchange.getRequestURI().getPath().split("/")[2]);
+            Movie movie = moviesStore.getMovieList().stream()
+                    .filter(m -> m.getId() == id)
+                    .findFirst()
+                    .orElse(null);
+            if (movie != null) {
+                moviesStore.deleteMovie(movie);
+                sendNoContent(exchange);
+            } else {
+                ErrorResponse response = new ErrorResponse("Фильм не найден");
+                sendJson(exchange, 404, gson.toJson(response));
+            }
+
+        } catch (NumberFormatException | IOException e) {
+            ErrorResponse response = new ErrorResponse("Некорректный ID");
+            sendJson(exchange, 400, gson.toJson(response));
+        }
     }
 }

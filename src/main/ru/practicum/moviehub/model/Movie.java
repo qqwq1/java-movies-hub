@@ -6,13 +6,11 @@ import java.util.Objects;
 
 public class Movie {
     private final String title;
-    private final int id;
     private final int year;
 
     public Movie(String title, int year) {
         this.title = title;
         this.year = year;
-        this.id = title.hashCode() + Objects.hashCode(year);
     }
 
     public String getTitle() {
@@ -20,7 +18,7 @@ public class Movie {
     }
 
     public int getId() {
-        return id;
+        return Objects.hash(title, year);
     }
 
     public int getYear() {
